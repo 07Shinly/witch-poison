@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#5b2a86">
+<title>女巫的毒药 · 双人单词游戏</title>
+<style>
+:root{
+  --c1:#4f8ef7;
+  --c2:#ff6b4a;
+  --ok:#22b573;
+  --bad:#e74c3c;
+  --poison:#6a1b9a;
+  --text:#2d3436;
+  --card:#ffffff;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei","PingFang SC","Helvetica Neue",Roboto,sans-serif;
+  background:linear-gradient(135deg,#2d1b4e 0%,#5b2a86 45%,#7b2d8b 100%);
+  color:var(--text);
+  overflow-x:hidden;
+}
+button{font-family:inherit;}
+.bg-blobs{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0;}
+.bg-blobs i{position:absolute;border-radius:50%;filter:blur(46px);opacity:.32;animation:blob 15s ease-in-out infinite alternate;}
+.bg-blobs i:nth-child(1){width:360px;height:360px;background:#9b59b6;top:-90px;left:-90px;}
+.bg-blobs i:nth-child(2){width:320px;height:320px;background:#1abc9c;bottom:-80px;right:-60px;animation-delay:-5s;}
+.bg-blobs i:nth-child(3){width:280px;height:280px;background:#e67e22;top:45%;left:58%;animation-delay:-9s;}
+@keyframes blob{from{transform:translate(0,0) scale(1);}to{transform:translate(50px,30px) scale(1.15);}}
+
+.screen{position:relative;z-index:1;display:none;min-height:100vh;}
+.screen.active{display:flex;}
+.hidden{display:none!important;}
+
+/* ============ 设置页 ============ */
+#screen-setup{flex-direction:column;align-items:center;padding:18px 14px 40px;}
+.setup-wrap{width:100%;max-width:760px;}
+.hero{text-align:center;color:#fff;margin:6px 0 16px;}
+.hero-logo{font-size:52px;display:inline-block;animation:logoFloat 2.4s ease-in-out infinite;}
+@keyframes logoFloat{0%,100%{transform:translateY(0) rotate(-4deg);}50%{transform:translateY(-9px) rotate(4deg);}}
+.hero h1{font-size:clamp(27px,5.4vw,38px);margin:6px 0 4px;text-shadow:0 3px 14px rgba(0,0,0,.35);}
+.hero p{font-size:14px;opacity:.92;}
+.rule-strip{background:rgba(255,255,255,.14);backdrop-filter:blur(5px);border:1px solid rgba(255,255,255,.22);border-radius:14px;color:#fff;font-size:13px;line-height:1.7;padding:10px 14px;margin-bottom:16px;}
+.rule-strip b{color:#ffeaa7;}
+
+.card{background:var(--card);border-radius:20px;box-shadow:0 8px 30px rgba(0,0,0,.18);padding:16px 16px 18px;margin-bottom:16px;}
+.card h2{font-size:17px;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.badge{background:#e8d5f5;color:#5b2a86;border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700;margin-left:auto;}
+
+.players-setup{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.pset{background:#f8f9fa;border-radius:14px;padding:10px;}
+.pset-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.avatar-btn{border:none;width:44px;height:44px;border-radius:50%;font-size:22px;background:#fff;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.1);}
+.name-input{flex:1;border:2px solid #dfe6e9;border-radius:10px;padding:8px 10px;font-size:15px;font-weight:700;outline:none;min-width:0;}
+.name-input:focus{border-color:var(--c1);}
+.pset[data-p="1"] .name-input:focus{border-color:var(--c2);}
+.colors{display:flex;gap:6px;}
+.color-dot{width:24px;height:24px;border-radius:50%;border:2px solid transparent;cursor:pointer;flex:none;}
+.color-dot.active{border-color:#2d3436;transform:scale(1.15);}
+
+.word-toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+.word-toolbar button{border:none;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;background:#dfe6e9;color:var(--text);}
+.word-toolbar button.danger{background:#ffd9d9;color:#c0392b;}
+.word-toolbar button:active{transform:scale(.96);}
+.word-table-wrap{max-height:230px;overflow:auto;border:2px solid #dfe6e9;border-radius:12px;}
+table{width:100%;border-collapse:collapse;}
+th{position:sticky;top:0;background:#f1f2f6;font-size:12px;color:#636e72;padding:8px 6px;text-align:left;}
+td{padding:4px;}
+td input{width:100%;border:1px solid #dfe6e9;border-radius:8px;padding:8px 8px;font-size:15px;outline:none;}
+td input:focus{border-color:#5b2a86;}
+.del{width:32px;height:32px;border:none;border-radius:8px;background:#ffd9d9;color:#c0392b;font-size:14px;cursor:pointer;}
+.hint{font-size:12px;color:#636e72;margin-top:8px;}
+
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.settings-grid label{background:#f8f9fa;border-radius:12px;padding:8px 10px;font-size:13px;font-weight:700;display:flex;flex-direction:column;gap:6px;}
+.settings-grid select{border:2px solid #dfe6e9;border-radius:8px;padding:7px;font-size:14px;font-weight:600;background:#fff;outline:none;}
+.settings-grid label.check{flex-direction:row;align-items:center;font-size:15px;}
+.settings-grid input[type=checkbox]{width:20px;height:20px;accent-color:#5b2a86;}
+
+.start-btn{display:block;width:100%;border:none;border-radius:18px;padding:18px;font-size:22px;font-weight:900;color:#fff;background:linear-gradient(135deg,#8e44ad,#6c3483);box-shadow:0 8px 24px rgba(108,52,131,.5);cursor:pointer;letter-spacing:2px;transition:transform .1s;}
+.start-btn:active{transform:scale(.97);}
+.start-btn:disabled{opacity:.5;cursor:not-allowed;}
+.ghost-btn{border:2px solid rgba(255,255,255,.7);background:transparent;color:#fff;border-radius:14px;padding:12px 20px;font-size:16px;font-weight:800;cursor:pointer;}
+.tiny{font-size:12px;color:#fff;opacity:.85;text-align:center;margin-top:12px;}
+
+/* ============ 毒药设置页（教师指定） ============ */
+#screen-poison{flex-direction:column;align-items:center;justify-content:center;padding:18px 14px;}
+.poison-wrap{width:100%;max-width:680px;background:rgba(255,255,255,.95);border-radius:22px;padding:18px;box-shadow:0 10px 34px rgba(0,0,0,.3);}
+.poison-wrap h2{text-align:center;font-size:21px;margin-bottom:4px;}
+.poison-wrap .sub{text-align:center;font-size:13px;color:#636e72;margin-bottom:12px;}
+.poison-count{text-align:center;font-weight:900;font-size:15px;color:#6a1b9a;margin-bottom:12px;}
+.poison-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+.pcard{position:relative;border:3px solid #dfe6e9;border-radius:14px;background:#fff;padding:12px 6px;text-align:center;cursor:pointer;min-height:74px;display:flex;flex-direction:column;justify-content:center;transition:.15s;}
+.pcard .en{font-size:17px;font-weight:900;}
+.pcard .cn{font-size:13px;color:#636e72;margin-top:2px;}
+.pcard.poison{border-color:#e74c3c;background:#ffeaea;animation:poisonPulse .8s ease-in-out infinite alternate;}
+.pcard.poison::after{content:"🧪 毒药";position:absolute;top:-10px;right:-8px;background:#e74c3c;color:#fff;font-size:11px;font-weight:900;border-radius:20px;padding:3px 8px;box-shadow:0 2px 6px rgba(0,0,0,.25);}
+@keyframes poisonPulse{from{transform:scale(1);}to{transform:scale(1.04);}}
+
+/* ============ 对战页 ============ */
+#screen-battle{flex-direction:column;height:100vh;height:100dvh;padding:0;}
+.battle-top{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;color:#fff;}
+.round-info{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;min-width:0;}
+.round-info span{font-size:15px;font-weight:800;}
+.round-dots{display:flex;gap:5px;}
+.round-dots i{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.35);}
+.round-dots i.done{background:#ffd32a;}
+.round-dots i.now{background:#fff;transform:scale(1.3);}
+.icon-btn{border:none;width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.22);color:#fff;font-size:19px;cursor:pointer;flex:none;}
+.timer-ring{position:relative;width:46px;height:46px;flex:none;}
+.timer-ring svg{width:46px;height:46px;transform:rotate(-90deg);}
+.timer-ring circle{fill:none;stroke-width:4;stroke-linecap:round;}
+#timer-ring-bg{stroke:rgba(255,255,255,.3);}
+#timer-ring{stroke:#fff;transition:stroke .2s;}
+.timer-ring.warn #timer-ring{stroke:#fdcb6e;}
+.timer-ring.danger #timer-ring{stroke:#ff7675;}
+.timer-ring.hidden{visibility:hidden;}
+#timer-num{position:absolute;inset:0;display:grid;place-items:center;font-size:14px;font-weight:900;color:#fff;}
+
+.scoreboard{display:flex;gap:8px;padding:0 10px 10px;color:#fff;}
+.score-chip{flex:1;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.14);border:2px solid transparent;border-radius:16px;padding:8px 10px;}
+.score-chip.turn{background:rgba(255,255,255,.28);border-color:#ffd32a;box-shadow:0 0 16px rgba(255,211,42,.35);}
+.score-chip .av{width:38px;height:38px;border-radius:50%;background:var(--pc);display:grid;place-items:center;font-size:20px;flex:none;}
+.score-chip .nm{font-size:14px;font-weight:800;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.score-chip .pts{margin-left:auto;text-align:right;line-height:1.2;}
+.score-chip .pts b{font-size:20px;}
+.score-chip .pts small{display:block;font-size:10px;opacity:.75;}
+.score-chip .pts b.pop{animation:scorePop .4s;}
+@keyframes scorePop{0%{transform:scale(1);}40%{transform:scale(1.4);}100%{transform:scale(1);}}
+
+.turn-banner{text-align:center;color:#fff;font-size:clamp(16px,3.4vmin,22px);font-weight:900;padding:2px 12px 10px;}
+.turn-banner span{background:#ffd32a;color:#5b2a86;border-radius:30px;padding:2px 14px;display:inline-block;box-shadow:0 4px 14px rgba(0,0,0,.25);}
+
+.board-zone{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 12px 12px;min-height:0;}
+.card-grid{display:grid;gap:10px;width:100%;max-width:640px;}
+.card-grid .ccol{grid-column:span 1;}
+.card{position:relative;perspective:800px;aspect-ratio:1/0.82;cursor:pointer;}
+.card-inner{position:absolute;inset:0;transition:transform .5s;transform-style:preserve-3d;}
+.card.flipped .card-inner{transform:rotateY(180deg);}
+.card-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 5px 16px rgba(0,0,0,.25);}
+.card-back{background:linear-gradient(160deg,#8e44ad,#5b2a86);color:#fff;border:2px solid rgba(255,255,255,.35);}
+.card-back .back-emoji{font-size:clamp(26px,5.6vmin,40px);}
+.card-back .back-q{font-size:clamp(11px,2vmin,14px);opacity:.75;margin-top:2px;}
+.card-front{background:#fff;transform:rotateY(180deg);padding:4px;}
+.card-front.safe::after{content:"✓";position:absolute;top:-8px;right:-6px;background:var(--ok);color:#fff;font-size:14px;font-weight:900;border-radius:50%;width:26px;height:26px;display:grid;place-items:center;box-shadow:0 2px 6px rgba(0,0,0,.25);}
+.card-front.poison-front{background:linear-gradient(160deg,#7b241c,#641e16);color:#fff;border:2px solid #f39c12;}
+.card-front .f-en{font-size:clamp(15px,3.2vmin,24px);font-weight:900;word-break:break-word;text-align:center;line-height:1.15;}
+.card-front .f-cn{font-size:clamp(11px,2.2vmin,16px);color:#636e72;margin-top:3px;text-align:center;}
+.card-front.poison-front .f-cn{color:#ffeaa7;}
+.card-front .f-poison{font-size:clamp(24px,5vmin,36px);}
+.card.revealing{pointer-events:none;}
+.card.locked{pointer-events:none;cursor:default;}
+.card.poison-hit .card-inner{animation:cardShake .55s;}
+@keyframes cardShake{0%,100%{transform:rotateY(180deg) translateX(0);}20%{transform:rotateY(180deg) translateX(-7px);}40%{transform:rotateY(180deg) translateX(7px);}60%{transform:rotateY(180deg) translateX(-5px);}80%{transform:rotateY(180deg) translateX(5px);}}
+
+.judge-bar{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;padding:4px 12px 12px;}
+.judge-bar.hidden{display:none;}
+.judge-btn{border:none;border-radius:16px;padding:12px 18px;font-size:16px;font-weight:900;cursor:pointer;color:#fff;box-shadow:0 5px 14px rgba(0,0,0,.25);}
+.judge-btn.ok{background:linear-gradient(135deg,#2ecc71,#1e8449);}
+.judge-btn.bad{background:linear-gradient(135deg,#e74c3c,#a93226);}
+.judge-btn:active{transform:scale(.95);}
+
+.toast{position:fixed;top:24%;left:50%;transform:translate(-50%,-50%) scale(.7);background:rgba(0,0,0,.85);color:#fff;padding:13px 26px;border-radius:40px;font-size:clamp(17px,4.2vmin,26px);font-weight:900;z-index:100;opacity:0;pointer-events:none;text-align:center;max-width:88vw;}
+.toast.show{animation:toastIn 1.6s ease forwards;}
+@keyframes toastIn{0%{opacity:0;transform:translate(-50%,-50%) scale(.7);}14%{opacity:1;transform:translate(-50%,-50%) scale(1.06);}24%{transform:translate(-50%,-50%) scale(1);}78%{opacity:1;}100%{opacity:0;transform:translate(-50%,-50%) scale(1);}}
+
+.poison-flash{position:fixed;inset:0;background:radial-gradient(circle,rgba(106,27,154,.85),rgba(20,5,30,.95));z-index:90;display:grid;place-items:center;pointer-events:none;opacity:0;}
+.poison-flash.show{animation:flashFade 1.8s ease forwards;}
+@keyframes flashFade{0%{opacity:0;}12%{opacity:1;}85%{opacity:1;}100%{opacity:0;}}
+.poison-flash .big{font-size:clamp(70px,18vmin,130px);animation:skullBounce .7s ease-in-out infinite alternate;}
+@keyframes skullBounce{from{transform:translateY(-8px) rotate(-6deg);}to{transform:translateY(10px) rotate(6deg);}}
+
+/* ============ 结果页 ============ */
+#screen-result{flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;color:#fff;}
+.result-wrap{max-width:520px;width:100%;}
+.trophy{font-size:clamp(70px,18vmin,120px);animation:trophy 1.4s ease-in-out infinite;}
+@keyframes trophy{0%,100%{transform:translateY(0) rotate(-4deg);}50%{transform:translateY(-14px) rotate(4deg);}}
+#screen-result h1{font-size:clamp(30px,7vmin,46px);margin:8px 0 4px;text-shadow:0 4px 16px rgba(0,0,0,.3);}
+.result-sub{font-size:15px;opacity:.92;margin-bottom:22px;}
+.score-bars{background:rgba(255,255,255,.14);backdrop-filter:blur(6px);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:14px;margin-bottom:20px;}
+.sbar{display:flex;align-items:center;gap:10px;font-weight:800;}
+.sbar span{min-width:74px;text-align:left;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.sbar b{min-width:52px;font-size:22px;}
+.bar{flex:1;height:22px;background:rgba(255,255,255,.22);border-radius:12px;overflow:hidden;}
+.bar i{display:block;height:100%;width:0;border-radius:12px;transition:width .8s cubic-bezier(.2,.8,.2,1);}
+#sbar-0{background:var(--c1);}
+#sbar-1{background:var(--c2);}
+.result-stats{font-size:14px;opacity:.92;margin-bottom:22px;}
+.result-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+.result-btns .start-btn{width:auto;padding:15px 26px;font-size:18px;}
+
+/* 弹窗 */
+.modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.55);display:grid;place-items:center;z-index:200;padding:16px;}
+.modal-mask.hidden{display:none;}
+.modal{background:#fff;border-radius:20px;padding:18px;width:100%;max-width:480px;box-shadow:0 12px 40px rgba(0,0,0,.3);}
+.modal h3{margin-bottom:8px;}
+.modal textarea{width:100%;height:180px;border:2px solid #dfe6e9;border-radius:12px;padding:10px;font-size:15px;font-family:inherit;outline:none;resize:vertical;margin:10px 0;}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;}
+.modal-btns button{border:none;border-radius:10px;padding:9px 14px;font-size:14px;font-weight:800;cursor:pointer;background:#5b2a86;color:#fff;}
+.modal-btns button.ghost-btn{background:#eee;color:#2d3436;border:none;}
+
+/* 彩带 */
+.cf{position:fixed;width:10px;height:14px;border-radius:2px;z-index:999;pointer-events:none;animation:cfall 1.2s ease-out forwards;}
+@keyframes cfall{0%{transform:translate(0,0) rotate(0);opacity:1;}100%{transform:translate(var(--dx),var(--dy)) rotate(var(--rot));opacity:0;}}
+
+@media (max-width:640px){
+  .players-setup{grid-template-columns:1fr;}
+  .poison-grid{grid-template-columns:repeat(3,1fr);gap:7px;}
+  .pcard .en{font-size:14px;}
+  .card-grid{gap:7px;}
+}
+@media (max-width:430px){
+  .settings-grid{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+<div class="bg-blobs"><i></i><i></i><i></i></div>
+
+<!-- 设置页 -->
+<section id="screen-setup" class="screen active">
+  <div class="setup-wrap">
+    <header class="hero">
+      <div class="hero-logo">🧙‍♀️</div>
+      <h1>女巫的毒药</h1>
+      <p>双人轮流翻卡 · 读出单词 · 小心毒药！</p>
+    </header>
+
+    <div class="rule-strip">
+      📜 <b>玩法：</b>两人轮流从卡片中选一张，翻开后<b>大声读出英文单词</b>（限时内），中文含义由老师和同学现场听辨。卡片里藏着毒药🧪——谁翻到毒药，谁就“中毒”失败，另一方获胜！多局制，先赢下更多局者胜。
+    </div>
+
+    <div class="card">
+      <h2>👥 玩家设置</h2>
+      <div class="players-setup">
+        <div class="pset" data-p="0">
+          <div class="pset-head">
+            <button class="avatar-btn" data-p="0">🦁</button>
+            <input class="name-input" data-p="0" maxlength="8" placeholder="玩家1">
+          </div>
+          <div class="colors" data-p="0"></div>
+        </div>
+        <div class="pset" data-p="1">
+          <div class="pset-head">
+            <button class="avatar-btn" data-p="1">🐯</button>
+            <input class="name-input" data-p="1" maxlength="8" placeholder="玩家2">
+          </div>
+          <div class="colors" data-p="1"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📚 单词表 <span class="badge" id="word-count">0 个单词</span></h2>
+      <div class="word-toolbar">
+        <button id="btn-bulk">📋 批量粘贴</button>
+        <button id="btn-sample">✨ 示例词库</button>
+        <button id="btn-add">➕ 添加一行</button>
+        <button id="btn-clear" class="danger">🗑 清空</button>
+      </div>
+      <div class="word-table-wrap">
+        <table id="word-table">
+          <thead><tr><th>English</th><th>中文</th><th style="width:44px"></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="hint" id="word-hint"></p>
+    </div>
+
+    <div class="card">
+      <h2>⚗️ 游戏设置</h2>
+      <div class="settings-grid">
+        <label>卡片数量
+          <select id="set-cards">
+            <option value="6">6 张</option>
+            <option value="9" selected>9 张</option>
+            <option value="12">12 张</option>
+            <option value="16">16 张</option>
+            <option value="all">全部单词</option>
+          </select>
+        </label>
+        <label>毒药数量
+          <select id="set-poison">
+            <option value="1" selected>1 瓶</option>
+            <option value="2">2 瓶</option>
+            <option value="3">3 瓶</option>
+          </select>
+        </label>
+        <label>毒药怎么藏
+          <select id="set-poisonmode">
+            <option value="random" selected>🎲 随机隐藏</option>
+            <option value="teacher">🧙‍♀️ 教师指定</option>
+          </select>
+        </label>
+        <label>朗读限时
+          <select id="set-time">
+            <option value="0">不限时</option>
+            <option value="5">5 秒</option>
+            <option value="10">10 秒</option>
+            <option value="15" selected>15 秒</option>
+          </select>
+        </label>
+        <label>总局数
+          <select id="set-rounds">
+            <option value="1">1 局定胜负</option>
+            <option value="3" selected>3 局（三局两胜）</option>
+            <option value="5">5 局（五局三胜）</option>
+          </select>
+        </label>
+        <label class="check"><input type="checkbox" id="set-voice" checked> 🔊 语音朗读</label>
+      </div>
+    </div>
+
+    <button id="btn-start" class="start-btn">🧙‍♀️ 开始游戏</button>
+    <p class="tiny">手机建议横屏；大屏投影时可请两名学生上台对战。</p>
+  </div>
+</section>
+
+<!-- 教师指定毒药 -->
+<section id="screen-poison" class="screen">
+  <div class="poison-wrap">
+    <h2>🧙‍♀️ 教师秘密指定毒药</h2>
+    <p class="sub">点卡片把 <b>毒药</b> 藏在单词下面（学生不要看屏幕哦）</p>
+    <div class="poison-count" id="poison-count">已选 0 瓶毒药</div>
+    <div class="poison-grid" id="poison-grid"></div>
+    <div class="result-btns" style="justify-content:center;">
+      <button id="btn-poison-confirm" class="start-btn" style="width:auto;" disabled>✅ 藏好毒药，开始游戏</button>
+      <button id="btn-poison-back" class="ghost-btn" style="color:#2d3436;border-color:#b2bec3;">← 返回设置</button>
+    </div>
+  </div>
+</section>
+
+<!-- 对战页 -->
+<section id="screen-battle" class="screen">
+  <header class="battle-top">
+    <button id="btn-quit" class="icon-btn" title="返回设置">🏠</button>
+    <div class="round-info">
+      <span id="round-text">第 1/3 局</span>
+      <div class="round-dots" id="round-dots"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button id="btn-mute" class="icon-btn" title="声音开关">🔊</button>
+      <div class="timer-ring" id="timer-wrap">
+        <svg viewBox="0 0 46 46">
+          <circle id="timer-ring-bg" cx="23" cy="23" r="19"></circle>
+          <circle id="timer-ring" cx="23" cy="23" r="19" stroke-dasharray="119.4" stroke-dashoffset="0"></circle>
+        </svg>
+        <span id="timer-num">15</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="scoreboard">
+    <div class="score-chip" id="chip-0">
+      <div class="av" id="chipav-0">🦁</div>
+      <div class="nm" id="chipnm-0">玩家1</div>
+      <div class="pts"><b id="pts-0">0</b><small id="wins-0">胜局 0</small></div>
+    </div>
+    <div class="score-chip" id="chip-1">
+      <div class="av" id="chipav-1">🐯</div>
+      <div class="nm" id="chipnm-1">玩家2</div>
+      <div class="pts"><b id="pts-1">0</b><small id="wins-1">胜局 0</small></div>
+    </div>
+  </div>
+
+  <div class="turn-banner" id="turn-banner"><span>轮到：玩家1</span></div>
+
+  <div class="board-zone">
+    <div class="card-grid" id="card-grid"></div>
+  </div>
+
+  <div class="judge-bar hidden" id="judge-bar">
+    <button class="judge-btn ok" id="btn-read-ok">✅ 读对了，继续</button>
+    <button class="judge-btn bad" id="btn-read-bad">❌ 没读出，判中毒</button>
+  </div>
+
+  <div class="poison-flash" id="poison-flash"><div class="big">💀</div></div>
+  <div id="toast" class="toast"></div>
+</section>
+
+<!-- 结果页 -->
+<section id="screen-result" class="screen">
+  <div class="result-wrap">
+    <div class="trophy">🏆</div>
+    <h1 id="result-title">玩家1 获胜！</h1>
+    <p class="result-sub" id="result-sub"></p>
+    <div class="score-bars">
+      <div class="sbar">
+        <span id="sname-0">玩家1</span>
+        <div class="bar"><i id="sbar-0"></i></div>
+        <b id="sscore-0">0</b>
+      </div>
+      <div class="sbar">
+        <span id="sname-1">玩家2</span>
+        <div class="bar"><i id="sbar-1"></i></div>
+        <b id="sscore-1">0</b>
+      </div>
+    </div>
+    <p class="result-stats" id="result-stats"></p>
+    <div class="result-btns">
+      <button id="btn-again" class="start-btn">🔁 再玩一局</button>
+      <button id="btn-settings" class="ghost-btn">⚙️ 返回设置</button>
+    </div>
+  </div>
+</section>
+
+<!-- 批量粘贴弹窗 -->
+<div id="bulk-modal" class="modal-mask hidden">
+  <div class="modal">
+    <h3>📋 批量粘贴单词</h3>
+    <p class="tiny" style="color:#636e72;text-align:left;">每行一个：<b>英文 中文</b>（空格、Tab 或逗号分隔都可以）</p>
+    <textarea id="bulk-text" placeholder="apple 苹果&#10;banana 香蕉&#10;cat 猫&#10;dog,狗"></textarea>
+    <div class="modal-btns">
+      <button id="btn-bulk-append">➕ 追加</button>
+      <button id="btn-bulk-replace">♻️ 替换</button>
+      <button id="btn-bulk-cancel" class="ghost-btn">取消</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+var $=function(s){return document.querySelector(s);};
+var $$=function(s){return Array.prototype.slice.call(document.querySelectorAll(s));};
+
+var PRESET_WORDS=[
+  ['apple','苹果'],['banana','香蕉'],['cat','猫'],['dog','狗'],['fish','鱼'],
+  ['book','书'],['pen','钢笔'],['desk','课桌'],['teacher','老师'],['student','学生'],
+  ['happy','开心'],['sad','难过'],['big','大的'],['small','小的'],['red','红色'],
+  ['blue','蓝色'],['run','跑'],['jump','跳'],['eat','吃'],['drink','喝']
+];
+var AVATARS=['🦁','🐯','🐻','🐰','🐸','🦊','🐼','🐨','🦄','🐶'];
+var COLORS=['#4f8ef7','#ff6b4a','#22b573','#9b59d0','#f7a600','#00b8c9','#e84393','#6c5ce7'];
+
+var state={
+  words:[],
+  cardCount:9,poisonCount:1,poisonMode:'random',timeLimit:15,voice:true,totalRounds:3,
+  players:[
+    {name:'玩家1',color:'#4f8ef7',avatar:'🦁',points:0,wins:0},
+    {name:'玩家2',color:'#ff6b4a',avatar:'🐯',points:0,wins:0}
+  ],
+  pool:[],       // 本局固定单词池（带 poison 标记）
+  grid:[],       // 当前局卡片（位置乱序副本）
+  currentPlayer:0,
+  roundIndex:0,
+  revealMode:false,
+  roundEnding:false,
+  currentRevealed:-1,
+  teacherSel:[],
+  timerId:null,remain:0,muted:false
+};
+
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function max0(n){return Math.max(0,n);}
+
+/* ---------- 存储 ---------- */
+function saveWords(){try{localStorage.setItem('wbt.words.v1',JSON.stringify(state.words));}catch(e){}}
+function loadWords(){
+  try{
+    var d=localStorage.getItem('wbt.words.v1');
+    if(d){var arr=JSON.parse(d);if(Array.isArray(arr)){state.words=arr;return;}}
+  }catch(e){}
+  state.words=PRESET_WORDS.map(function(w){return {en:w[0],cn:w[1]};});
+  saveWords();
+}
+function saveSettings(){
+  var s={cardCount:state.cardCount,poisonCount:state.poisonCount,poisonMode:state.poisonMode,timeLimit:state.timeLimit,voice:state.voice,totalRounds:state.totalRounds,
+    p0:{name:state.players[0].name,color:state.players[0].color,avatar:state.players[0].avatar},
+    p1:{name:state.players[1].name,color:state.players[1].color,avatar:state.players[1].avatar}};
+  try{localStorage.setItem('wbt.settings.v1',JSON.stringify(s));}catch(e){}
+}
+function loadSettings(){
+  try{
+    var d=localStorage.getItem('wbt.settings.v1');
+    if(!d)return;
+    var s=JSON.parse(d);
+    if(s.cardCount!=null)state.cardCount=s.cardCount;
+    if(s.poisonCount!=null)state.poisonCount=s.poisonCount;
+    if(s.poisonMode)state.poisonMode=s.poisonMode;
+    if(s.timeLimit!=null)state.timeLimit=s.timeLimit;
+    if(s.voice!=null)state.voice=s.voice;
+    if(s.totalRounds!=null)state.totalRounds=s.totalRounds;
+    if(s.p0){state.players[0].name=s.p0.name||state.players[0].name;state.players[0].color=s.p0.color||state.players[0].color;state.players[0].avatar=s.p0.avatar||state.players[0].avatar;}
+    if(s.p1){state.players[1].name=s.p1.name||state.players[1].name;state.players[1].color=s.p1.color||state.players[1].color;state.players[1].avatar=s.p1.avatar||state.players[1].avatar;}
+  }catch(e){}
+}
+
+/* ---------- 页面切换 ---------- */
+function showScreen(name){
+  $$('.screen').forEach(function(s){s.classList.remove('active');});
+  $('#screen-'+name).classList.add('active');
+}
+
+/* ---------- 设置页 ---------- */
+function renderWordTable(){
+  var tb=$('#word-table tbody');
+  tb.innerHTML='';
+  state.words.forEach(function(w,i){
+    var tr=document.createElement('tr');
+    tr.innerHTML='<td><input class="ew" data-i="'+i+'" value="'+esc(w.en)+'" placeholder="English"></td>'+
+                 '<td><input class="cn" data-i="'+i+'" value="'+esc(w.cn)+'" placeholder="中文"></td>'+
+                 '<td><button class="del" data-i="'+i+'">✕</button></td>';
+    tb.appendChild(tr);
+  });
+  updateWordCount();
+}
+function updateWordCount(){
+  var n=state.words.filter(function(w){return w.en.trim()&&w.cn.trim();}).length;
+  $('#word-count').textContent=n+' 个单词';
+  $('#word-hint').textContent=n>=6?'✅ 单词数量足够，可以开始游戏':'⚠️ 至少需要 6 个完整单词';
+}
+function renderPlayersSetup(){
+  [0,1].forEach(function(p){
+    var box=$('.colors[data-p="'+p+'"]');
+    box.innerHTML='';
+    COLORS.forEach(function(c){
+      var d=document.createElement('button');
+      d.className='color-dot'+(state.players[p].color===c?' active':'');
+      d.style.background=c;
+      d.setAttribute('data-p',p);
+      d.setAttribute('data-color',c);
+      box.appendChild(d);
+    });
+    $('.avatar-btn[data-p="'+p+'"]').textContent=state.players[p].avatar;
+    $('.name-input[data-p="'+p+'"]').value=state.players[p].name;
+  });
+  document.documentElement.style.setProperty('--c1',state.players[0].color);
+  document.documentElement.style.setProperty('--c2',state.players[1].color);
+}
+function renderSetup(){
+  $('#set-cards').value=state.cardCount;
+  $('#set-poison').value=state.poisonCount;
+  $('#set-poisonmode').value=state.poisonMode;
+  $('#set-time').value=state.timeLimit;
+  $('#set-rounds').value=state.totalRounds;
+  $('#set-voice').checked=state.voice;
+  renderWordTable();
+  renderPlayersSetup();
+}
+
+function parseBulk(text){
+  var out=[];
+  text.split(/\r?\n/).forEach(function(line){
+    line=line.trim();
+    if(!line)return;
+    var m=line.match(/^(\S+)[\s,，、]+(.+)$/);
+    if(m){out.push({en:m[1].trim(),cn:m[2].trim()});}
+    else{out.push({en:line,cn:''});}
+  });
+  return out;
+}
+
+/* ---------- 开局 ---------- */
+function buildPool(){
+  var valid=state.words.filter(function(w){return w.en.trim()&&w.cn.trim();});
+  var n=state.cardCount==='all'?valid.length:Math.min(+state.cardCount,valid.length);
+  var pool=shuffle(valid.slice(0,n)).map(function(w){return {en:w.en.trim(),cn:w.cn.trim(),poison:false};});
+  return pool;
+}
+
+function startGame(){
+  var valid=state.words.filter(function(w){return w.en.trim()&&w.cn.trim();});
+  var n=state.cardCount==='all'?valid.length:Math.min(+state.cardCount,valid.length);
+  if(valid.length<6){alert('请至少准备 6 个完整单词哦！');return;}
+  if(n<=state.poisonCount){alert('卡片数量要大于毒药数量，多加点单词吧！');return;}
+  state.players.forEach(function(p){p.points=0;p.wins=0;});
+  state.roundIndex=0;
+  state.pool=buildPool();
+  if(state.poisonMode==='teacher'){
+    state.teacherSel=[];
+    showScreen('poison');
+    renderPoisonSetup();
+  }else{
+    hidePoisonRandom();
+    showScreen('battle');
+    startRound();
+  }
+}
+
+function hidePoisonRandom(){
+  var idxs=[];
+  var n=state.pool.length;
+  while(idxs.length<state.poisonCount){
+    var r=Math.floor(Math.random()*n);
+    if(idxs.indexOf(r)===-1)idxs.push(r);
+  }
+  state.pool.forEach(function(c){c.poison=false;});
+  idxs.forEach(function(i){state.pool[i].poison=true;});
+}
+
+/* ---------- 教师指定毒药 ---------- */
+function renderPoisonSetup(){
+  var grid=$('#poison-grid');
+  grid.innerHTML='';
+  state.pool.forEach(function(c,i){
+    var d=document.createElement('button');
+    d.className='pcard';
+    d.setAttribute('data-i',i);
+    d.innerHTML='<span class="en">'+esc(c.en)+'</span><span class="cn">'+esc(c.cn)+'</span>';
+    grid.appendChild(d);
+  });
+  updatePoisonCount();
+}
+function updatePoisonCount(){
+  var sel=state.teacherSel.length;
+  $('#poison-count').textContent='已选 '+sel+'/'+state.poisonCount+' 瓶毒药';
+  $('#btn-poison-confirm').disabled=sel!==state.poisonCount;
+  $$('#poison-grid .pcard').forEach(function(b){
+    var i=+b.getAttribute('data-i');
+    b.classList.toggle('poison',state.teacherSel.indexOf(i)!==-1);
+  });
+}
+
+/* ---------- 对战 ---------- */
+function startRound(){
+  state.grid=shuffle(state.pool.map(function(c){return {en:c.en,cn:c.cn,poison:c.poison,revealed:false};}));
+  state.currentPlayer=state.roundIndex%2;
+  state.revealMode=false;
+  state.roundEnding=false;
+  state.currentRevealed=-1;
+  stopTimer();
+  hideJudge();
+  $('#poison-flash').classList.remove('show');
+  renderBattle();
+  renderGrid();
+  updateTurn();
+}
+
+function renderBattle(){
+  $('#round-text').textContent='第 '+(state.roundIndex+1)+'/'+state.totalRounds+' 局';
+  var dots=$('#round-dots');
+  dots.innerHTML='';
+  for(var i=0;i<state.totalRounds;i++){
+    var d=document.createElement('i');
+    if(i<state.roundIndex)d.className='done';
+    if(i===state.roundIndex)d.className='now';
+    dots.appendChild(d);
+  }
+  [0,1].forEach(function(p){
+    var pl=state.players[p];
+    $('#chip-'+p).style.setProperty('--pc',pl.color);
+    $('#chipav-'+p).textContent=pl.avatar;
+    $('#chipnm-'+p).textContent=pl.name;
+    $('#pts-'+p).textContent=pl.points;
+    $('#wins-'+p).textContent='胜局 '+pl.wins;
+  });
+}
+
+function renderGrid(){
+  var grid=$('#card-grid');
+  var n=state.grid.length;
+  var cols=n<=6?3:(n<=9?3:(n<=12?4:4));
+  grid.style.gridTemplateColumns='repeat('+cols+',1fr)';
+  grid.innerHTML='';
+  state.grid.forEach(function(c,i){
+    var card=document.createElement('div');
+    card.className='card';
+    card.setAttribute('data-i',i);
+    var frontClass=c.poison?'card-front poison-front':'card-front';
+    var frontHtml=c.poison
+      ?'<div class="f-poison">💀</div><div class="f-en">'+esc(c.en)+'</div><div class="f-cn">毒药！</div>'
+      :'<div class="f-en">'+esc(c.en)+'</div>';
+    card.innerHTML='<div class="card-inner">'+
+      '<div class="card-face card-back"><div class="back-emoji">🧪</div><div class="back-q">?</div></div>'+
+      '<div class="card-face '+frontClass+'">'+frontHtml+'</div>'+
+      '</div>';
+    grid.appendChild(card);
+  });
+}
+
+function updateTurn(){
+  var p=state.currentPlayer;
+  [0,1].forEach(function(i){$('#chip-'+i).classList.toggle('turn',i===p);});
+  $('#turn-banner').innerHTML='<span>轮到：'+esc(state.players[p].name)+'</span>';
+  hideJudge();
+}
+
+function onCardClick(i){
+  if(state.revealMode||state.roundEnding)return;
+  if(state.grid[i].revealed)return;
+  state.grid[i].revealed=true;
+  state.revealMode=true;
+  state.currentRevealed=i;
+  var card=$('#card-grid').children[i];
+  card.classList.add('revealing');
+  sound('flip');
+  setTimeout(function(){
+    card.classList.add('flipped');
+    if(state.voice)speak(state.grid[i].en,'en-US');
+    if(state.grid[i].poison){
+      setTimeout(function(){poisonHit(i);},450);
+    }else{
+      setTimeout(function(){
+        card.classList.remove('revealing');
+        card.classList.add('locked');
+        showJudge();
+        startReadTimer();
+      },450);
+    }
+  },80);
+}
+
+function showJudge(){ $('#judge-bar').classList.remove('hidden'); }
+function hideJudge(){ $('#judge-bar').classList.add('hidden'); }
+
+function startReadTimer(){
+  if(!state.timeLimit){$('#timer-wrap').classList.add('hidden');return;}
+  startTimer(state.timeLimit,function(){readFail();});
+}
+
+function readOk(){
+  stopTimer();
+  hideJudge();
+  var p=state.currentPlayer;
+  var i=state.currentRevealed;
+  if(i>=0){
+    var card=$('#card-grid').children[i];
+    card.querySelector('.card-front').classList.add('safe');
+  }
+  state.players[p].points+=10;
+  updateScoreUI(p);
+  state.revealMode=false;
+  sound('safe');
+  toast('✅ '+state.players[p].name+' 读出英文单词 +10');
+  state.currentPlayer=1-p;
+  updateTurn();
+}
+
+function readFail(){
+  stopTimer();
+  hideJudge();
+  poisonHit(-1);
+}
+
+function poisonHit(cardIdx){
+  stopTimer();
+  hideJudge();
+  state.revealMode=false;
+  state.roundEnding=true;
+  state.currentRevealed=-1;
+  var p=state.currentPlayer;
+  var loser=state.players[p];
+  var winner=state.players[1-p];
+  winner.wins++;
+  if(cardIdx>=0){
+    var card=$('#card-grid').children[cardIdx];
+    card.classList.add('poison-hit');
+  }
+  var flash=$('#poison-flash');
+  flash.classList.remove('show');
+  void flash.offsetWidth;
+  flash.classList.add('show');
+  sound('poison');
+  setTimeout(function(){
+    toast('💀 '+loser.name+' 中毒了！'+winner.name+' 赢得本局');
+    updateScoreUI(1-p);
+    updateScoreUI(p);
+    updateTurnBanner('💀 '+loser.name+' 中毒！');
+    setTimeout(nextRound,2000);
+  },700);
+}
+
+function updateTurnBanner(text){
+  $('#turn-banner').innerHTML='<span>'+esc(text)+'</span>';
+}
+
+function updateScoreUI(p){
+  $('#pts-'+p).textContent=state.players[p].points;
+  $('#wins-'+p).textContent='胜局 '+state.players[p].wins;
+  var el=$('#pts-'+p);
+  el.classList.remove('pop');
+  void el.offsetWidth;
+  el.classList.add('pop');
+}
+
+function nextRound(){
+  state.roundIndex++;
+  if(state.roundIndex>=state.totalRounds){endGame();return;}
+  if(state.poisonMode==='teacher'){
+    // 教师毒药模式：每局重新随机换位置，毒药单词保持教师指定
+  }else{
+    hidePoisonRandom();
+  }
+  startRound();
+}
+
+/* ---------- 计时器 ---------- */
+var RING_CIRC=2*Math.PI*19;
+function startTimer(secs,onEnd){
+  stopTimer();
+  var wrap=$('#timer-wrap');
+  if(!secs){wrap.classList.add('hidden');return;}
+  wrap.classList.remove('hidden','warn','danger');
+  state.remain=secs;
+  updateRing(secs);
+  var t0=Date.now();
+  state.timerId=setInterval(function(){
+    var left=secs-(Date.now()-t0)/1000;
+    if(left<0)left=0;
+    state.remain=left;
+    updateRing(secs);
+    if(left>0&&left<=3.1)sound('tick');
+    if(left<=0){stopTimer();onEnd();}
+  },200);
+}
+function stopTimer(){if(state.timerId){clearInterval(state.timerId);state.timerId=null;}}
+function updateRing(total){
+  var frac=state.remain/total;
+  var ring=$('#timer-ring');
+  ring.style.strokeDashoffset=RING_CIRC*(1-frac);
+  $('#timer-num').textContent=Math.ceil(state.remain);
+  var wrap=$('#timer-wrap');
+  wrap.classList.toggle('warn',state.remain<=6&&state.remain>3);
+  wrap.classList.toggle('danger',state.remain<=3);
+}
+
+/* ---------- 结果页 ---------- */
+function endGame(){
+  stopTimer();
+  var p1=state.players[0],p2=state.players[1];
+  var title,sub;
+  if(p1.wins===p2.wins){
+    if(p1.points===p2.points){
+      title='🤝 平局！';
+      sub='势均力敌，太精彩了，再来一局吧！';
+    }else{
+      var w=p1.points>p2.points?p1:p2;
+      title='🎉 '+w.name+' 积分领先获胜！';
+      sub='双方胜局相同，最终以积分决出胜负！';
+    }
+  }else{
+    var w2=p1.wins>p2.wins?p1:p2;
+    title='🎉 '+w2.name+' 获胜！';
+    sub='拿下 '+w2.wins+' 局胜利，成功躲开了毒药！';
+  }
+  $('#result-title').textContent=title;
+  $('#result-sub').textContent=sub;
+  $('#sname-0').textContent=p1.name;
+  $('#sname-1').textContent=p2.name;
+  $('#sscore-0').textContent=p1.points;
+  $('#sscore-1').textContent=p2.points;
+  var maxS=Math.max(p1.points,p2.points,1);
+  setTimeout(function(){$('#sbar-0').style.width=(p1.points/maxS*100)+'%';},100);
+  setTimeout(function(){$('#sbar-1').style.width=(p2.points/maxS*100)+'%';},250);
+  $('#result-stats').textContent='共 '+state.totalRounds+' 局 · 胜局 '+p1.wins+' : '+p2.wins+' · 积分 '+p1.points+' : '+p2.points;
+  document.documentElement.style.setProperty('--c1',p1.color);
+  document.documentElement.style.setProperty('--c2',p2.color);
+  showScreen('result');
+  sound('win');
+  confettiRain();
+}
+
+/* ---------- 提示 & 特效 ---------- */
+var toastTimer=null;
+function toast(msg){
+  var t=$('#toast');
+  t.textContent=msg;
+  t.classList.remove('show');
+  void t.offsetWidth;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){t.classList.remove('show');},1700);
+}
+
+function confettiRain(){
+  var n=0;
+  var iv=setInterval(function(){
+    for(var i=0;i<6;i++){
+      var el=document.createElement('i');
+      el.className='cf';
+      el.style.left=(Math.random()*innerWidth)+'px';
+      el.style.top='-20px';
+      el.style.background=COLORS[Math.floor(Math.random()*COLORS.length)];
+      el.style.setProperty('--dx',(Math.random()*160-80)+'px');
+      el.style.setProperty('--dy',(120+Math.random()*innerHeight*0.7)+'px');
+      el.style.setProperty('--rot',(Math.random()*720-360)+'deg');
+      document.body.appendChild(el);
+      setTimeout(function(){el.remove();},1400);
+    }
+    n++;
+    if(n>10)clearInterval(iv);
+  },140);
+}
+
+/* ---------- 声音 ---------- */
+var actx=null;
+function audioCtx(){
+  if(!actx){
+    try{actx=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}
+  }
+  if(actx&&actx.state==='suspended'){try{actx.resume();}catch(e){}}
+  return actx;
+}
+function tone(freq,dur,type,vol,delay){
+  if(state.muted)return;
+  var c=audioCtx();
+  if(!c)return;
+  var t=c.currentTime+(delay||0);
+  var o=c.createOscillator(),g=c.createGain();
+  o.type=type||'sine';
+  o.frequency.value=freq;
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(vol||0.12,t+0.02);
+  g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+  o.connect(g);g.connect(c.destination);
+  o.start(t);o.stop(t+dur+0.05);
+}
+function sound(kind){
+  switch(kind){
+    case 'flip':tone(700,0.06,'triangle',0.08);break;
+    case 'safe':tone(660,0.12,'sine',0.14);tone(880,0.16,'sine',0.14,0.1);break;
+    case 'poison':tone(520,0.2,'sawtooth',0.12);tone(320,0.3,'sawtooth',0.12,0.18);tone(160,0.5,'sawtooth',0.14,0.4);break;
+    case 'tick':tone(900,0.06,'square',0.04);break;
+    case 'time':tone(330,0.15,'sine',0.1);tone(220,0.25,'sine',0.1,0.15);break;
+    case 'win':[523,659,784,1047].forEach(function(f,i){tone(f,0.2,'triangle',0.13,i*0.13);});break;
+  }
+}
+
+/* ---------- 语音 ---------- */
+function speak(text,lang){
+  if(state.muted||!state.voice)return;
+  if(!('speechSynthesis' in window))return;
+  try{
+    window.speechSynthesis.cancel();
+    var u=new SpeechSynthesisUtterance(text);
+    u.lang=lang||'en-US';
+    u.rate=0.92;
+    var voices=window.speechSynthesis.getVoices();
+    var v=voices.filter(function(x){return x.lang&&x.lang.toLowerCase().indexOf(lang.slice(0,2).toLowerCase())===0;})[0];
+    if(v)u.voice=v;
+    window.speechSynthesis.speak(u);
+  }catch(e){}
+}
+
+/* ---------- 事件绑定 ---------- */
+function bindEvents(){
+  [0,1].forEach(function(p){
+    $('.avatar-btn[data-p="'+p+'"]').addEventListener('click',function(){
+      var i=AVATARS.indexOf(state.players[p].avatar);
+      state.players[p].avatar=AVATARS[(i+1)%AVATARS.length];
+      renderPlayersSetup();
+      saveSettings();
+    });
+    $('.name-input[data-p="'+p+'"]').addEventListener('input',function(e){
+      state.players[p].name=e.target.value.trim()||('玩家'+(p+1));
+      saveSettings();
+    });
+  });
+
+  document.addEventListener('click',function(e){
+    var dot=e.target.closest?e.target.closest('.color-dot'):null;
+    if(dot){
+      var p=+dot.getAttribute('data-p');
+      state.players[p].color=dot.getAttribute('data-color');
+      renderPlayersSetup();
+      saveSettings();
+      return;
+    }
+    var pc=e.target.closest?e.target.closest('.pcard'):null;
+    if(pc){
+      var i=+pc.getAttribute('data-i');
+      var idx=state.teacherSel.indexOf(i);
+      if(idx===-1){
+        if(state.teacherSel.length>=state.poisonCount)return;
+        state.teacherSel.push(i);
+      }else{
+        state.teacherSel.splice(idx,1);
+      }
+      updatePoisonCount();
+      return;
+    }
+    var card=e.target.closest?e.target.closest('.card'):null;
+    if(card&&!card.classList.contains('locked')&&!card.classList.contains('revealing')){
+      onCardClick(+card.getAttribute('data-i'));
+    }
+  });
+
+  $('#word-table tbody').addEventListener('input',function(e){
+    var t=e.target;
+    if(!t.classList.contains('ew')&&!t.classList.contains('cn'))return;
+    var i=+t.getAttribute('data-i');
+    if(!state.words[i])return;
+    state.words[i][t.classList.contains('ew')?'en':'cn']=t.value;
+    saveWords();
+    updateWordCount();
+  });
+  $('#word-table tbody').addEventListener('click',function(e){
+    var t=e.target;
+    if(!t.classList.contains('del'))return;
+    var i=+t.getAttribute('data-i');
+    state.words.splice(i,1);
+    saveWords();
+    renderWordTable();
+  });
+
+  $('#btn-add').addEventListener('click',function(){
+    state.words.push({en:'',cn:''});
+    renderWordTable();
+    var rows=$$('#word-table tbody tr');
+    if(rows.length){var inp=rows[rows.length-1].querySelector('.ew');inp.focus();}
+  });
+  $('#btn-sample').addEventListener('click',function(){
+    if(!confirm('将当前单词表替换为示例词库，确定吗？'))return;
+    state.words=PRESET_WORDS.map(function(w){return {en:w[0],cn:w[1]};});
+    saveWords();
+    renderWordTable();
+  });
+  $('#btn-clear').addEventListener('click',function(){
+    if(!confirm('确定清空所有单词吗？'))return;
+    state.words=[];
+    saveWords();
+    renderWordTable();
+  });
+
+  $('#btn-bulk').addEventListener('click',function(){
+    $('#bulk-text').value='';
+    $('#bulk-modal').classList.remove('hidden');
+  });
+  $('#btn-bulk-cancel').addEventListener('click',function(){$('#bulk-modal').classList.add('hidden');});
+  $('#bulk-modal').addEventListener('click',function(e){if(e.target.id==='bulk-modal')$('#bulk-modal').classList.add('hidden');});
+  function doBulk(mode){
+    var list=parseBulk($('#bulk-text').value);
+    if(!list.length){alert('没有识别到单词，请按“英文 中文”格式填写');return;}
+    if(mode==='append')state.words=state.words.concat(list);
+    else state.words=list;
+    saveWords();
+    renderWordTable();
+    $('#bulk-modal').classList.add('hidden');
+  }
+  $('#btn-bulk-append').addEventListener('click',function(){doBulk('append');});
+  $('#btn-bulk-replace').addEventListener('click',function(){doBulk('replace');});
+
+  $('#set-cards').addEventListener('change',function(e){state.cardCount=e.target.value;saveSettings();});
+  $('#set-poison').addEventListener('change',function(e){state.poisonCount=+e.target.value;saveSettings();});
+  $('#set-poisonmode').addEventListener('change',function(e){state.poisonMode=e.target.value;saveSettings();});
+  $('#set-time').addEventListener('change',function(e){state.timeLimit=+e.target.value;saveSettings();});
+  $('#set-rounds').addEventListener('change',function(e){state.totalRounds=+e.target.value;saveSettings();});
+  $('#set-voice').addEventListener('change',function(e){state.voice=e.target.checked;saveSettings();});
+
+  $('#btn-start').addEventListener('click',function(){audioCtx();startGame();});
+  $('#btn-poison-confirm').addEventListener('click',function(){
+    if(state.teacherSel.length!==state.poisonCount)return;
+    state.pool.forEach(function(c){c.poison=false;});
+    state.teacherSel.forEach(function(i){state.pool[i].poison=true;});
+    showScreen('battle');
+    startRound();
+  });
+  $('#btn-poison-back').addEventListener('click',function(){showScreen('setup');});
+  $('#btn-quit').addEventListener('click',function(){
+    if(!confirm('确定退出本局吗？'))return;
+    stopTimer();
+    try{window.speechSynthesis.cancel();}catch(e){}
+    showScreen('setup');
+  });
+  $('#btn-mute').addEventListener('click',function(){
+    state.muted=!state.muted;
+    $('#btn-mute').textContent=state.muted?'🔇':'🔊';
+    if(state.muted)try{window.speechSynthesis.cancel();}catch(e){}
+  });
+  $('#btn-read-ok').addEventListener('click',function(){readOk();});
+  $('#btn-read-bad').addEventListener('click',function(){readFail();});
+
+  $('#btn-again').addEventListener('click',function(){audioCtx();startGame();});
+  $('#btn-settings').addEventListener('click',function(){
+    stopTimer();
+    try{window.speechSynthesis.cancel();}catch(e){}
+    showScreen('setup');
+  });
+}
+
+/* ---------- 启动 ---------- */
+loadWords();
+loadSettings();
+renderSetup();
+bindEvents();
+})();
+</script>
+</body>
+</html>
